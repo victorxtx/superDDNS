@@ -1,0 +1,18 @@
+[Unit]
+Description=SuperDDNS IP Watcher and Notifier
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=php /opt/shell/check_this_ip_notify_cqcdn.php
+Restart=always
+RestartSec=5
+StandardOutput=null
+StandardError=null
+User=root
+Group=root
+WorkingDirectory=/opt/shell
+
+[Install]
+WantedBy=multi-user.target
