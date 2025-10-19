@@ -10,7 +10,7 @@
 header("Content-Type: application/json; charset=utf-8");
 $pubkeyFile = "/opt/shell/b_public.pem";
 $lastIpFile = "/opt/shell/last_ip.txt";
-$logFile = "/opt/shell/notify.log";
+$logFile = "/opt/nginx/html/notify.log";
 function logmsg($msg){
 	global $logFile;
 	$t = date("Y-m-d H:i:s");
