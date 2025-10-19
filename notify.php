@@ -1,4 +1,12 @@
 <?php
+/*
+文件名：notify.php
+运行位置：云主机 A 的 nginx->php-fpm 网站根目录下
+作用：
+	当动态主机 B 通过 云主机 A 的 ip.php 得知自己（主机 B）的 IP 地址发生变化后，向本页面发起 POST 通知。
+	POST 内容包括动态主机 B 的最新 IP 地址和时间戳以及对内容的 openssl 签名（防伪造）。
+	把动态主机 B 的最新 IP 地址通过 sed -i 写入云主机 A 的 nginx.conf 的 proxy_pass 对应位置，然后重载 nginx
+*/
 header("Content-Type: application/json; charset=utf-8");
 $pubkeyFile = "/opt/shell/b_public.pem";
 $lastIpFile = "/opt/shell/last_ip.txt";
