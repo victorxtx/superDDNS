@@ -94,7 +94,7 @@ if ($ret_path !== 0){
 	logmsg("获取 nginx 配置文件失败");
 	exit;
 }
-$cmd_update_conf = "sed -i 's/^\\([[:space:]]*proxy_pass \\)\\(.*\)\\(:[0-9]*;\\)$/\\1$ip_in\\3/g' $nginx_conf_path";
+$cmd_update_conf = "sed -i 's/^\\([[:space:]]*proxy_pass \\)\\(.*\\)\\(:[0-9]*;\\)$/\\1$ip_in\\3/g' $nginx_conf_path";
 exec($cmd_update_conf, $out1, $ret_update_conf);
 if ($ret_update_conf !== 0){
 	$ret = [
