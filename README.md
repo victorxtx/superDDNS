@@ -164,7 +164,8 @@ systemctl status check_this_ip_notify_cdn.service
 - 自行使用 apt install 或编译安装 php
 - php 官网 https://php.net/
 - 开启 **curl** 扩展, 并配置 **openssl** （--with-openssl）
-- 为 php-fpm 配置 systemd，确保运行参数有 -R：
+- 为 php-fpm 配置 systemd，确保运行参数有 -R
+- 示例中的 php 路径为 /opt/php/sbin/php-fpm，这是我的常用路径，你的 php 路径大概率不在这里，请自行修改
 ```bash
 nano /usr/lib/systemd/system/php-fpm.service
 ```
