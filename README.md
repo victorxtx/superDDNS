@@ -139,21 +139,21 @@ systemctl status check_this_ip_notify_cdn.service
 ### 3️ 搭建转发逻辑（核心功能）
 在 **nginx.conf** 中，与 http{} **平行的位置** 添加如下代码：（假设你当前主机B的动态IP是 1.2.3.4，要转发 25565 和 7777 两个端口：
 > stream {  
-> 	server {  
-> 		listen 25565;  
-> 		proxy_pass 1.2.3.4:25565;  
-> 	}  
-> 	server {  
-> 		listen 7777;  
-> 		proxy_pass 1.2.3.4:7777;  
-> 	}  
+> &emsp;server {  
+> &emsp;&emsp;listen 25565;  
+> &emsp;&emsp;proxy_pass 1.2.3.4:25565;  
+> &emsp;}  
+> &emsp;server {  
+> &emsp;&emsp;listen 7777;  
+> &emsp;&emsp;proxy_pass 1.2.3.4:7777;  
+> &emsp;}  
 > }  
 
 #### 在 server 内的 listen 和 : 后填写你**需要稳定转发的端口**
 每一个
 > server{  
-> 	listen <要转发的端口>;  
-> 	proxy_pass <当前动态公网地址>:<要转发的端口>;  
+> &emsp;listen <要转发的端口>;  
+> &emsp;proxy_pass <当前动态公网地址>:<要转发的端口>;  
 > }  
 
 将会转发一个固定端口，并以最大可靠性确保连接可靠性（动态IP更换时，只会断一瞬间，可以瞬间重连）  
