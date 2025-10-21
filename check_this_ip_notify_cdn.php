@@ -141,11 +141,11 @@ while (true){
 	}
 
 	// 周期性内存与 GC 日志
-	if ($iter % $log_mem_interval === 0) {
-		$mem = memory_get_usage(true);
-		$peak = memory_get_peak_usage(true);
-		logmsg("iter=$iter memory={$mem} peak={$peak}");
-	}
+	// if ($iter % $log_mem_interval === 0) {
+	// 	$mem = memory_get_usage(true);
+	// 	$peak = memory_get_peak_usage(true);
+	// 	logmsg("iter=$iter memory={$mem} peak={$peak}");
+	// }
 	if ($iter % $gc_interval === 0) {
 		gc_collect_cycles();
 	}
