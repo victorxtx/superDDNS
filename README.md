@@ -2,9 +2,11 @@
 # 🛰️ 超级 DDNS
 
 ## 🧭 一句话说明
-**Solve the issue where clients cannot access a server when its dynamic public IP (DDNS) changes.**<br>**解决动态公网 IP（DDNS）服务器地址变化后，客户端无法及时访问的问题。**
+**Solve the issue where clients cannot access a server when its dynamic public IP (DDNS) changes.**
+**解决动态公网 IP（DDNS）服务器地址变化后，客户端无法及时访问的问题。**
 
-- 当你家宽带（主机 B）拥有公网 IP，但这个 IP 经常变动 
+- When your home network (Host B) has a public IP that changes frequently...
+  当你家宽带（主机 B）拥有公网 IP，但这个 IP 经常变动 
 - 外部云主机（主机 A）上的服务往往会因为 DNS 未及时更新而访问失败。  
 - 本系统能在 **IP 变化发生的最短时间内自动通知云端更新配置（如 nginx.conf）**，  
 - 实现类似“动态 DDNS”的即时修复，而无需域名服务商介入。
