@@ -1,5 +1,4 @@
-# 🛰️ SuperDDNS Notify System
-# 🛰️ 超级 DDNS
+# 🛰️ SuperDDNS / 超级 DDNS
 
 ## 🧭 Summary / 一句话说明
 **Solve the issue where clients cannot access a server when its dynamic public IP (DDNS) changes.**  
