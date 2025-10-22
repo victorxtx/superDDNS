@@ -1,7 +1,7 @@
 # 🛰️ SuperDDNS Notify System
 # 🛰️ 超级 DDNS
 
-## 🧭 一句话说明
+## 🧭 Summary / 一句话说明
 **Solve the issue where clients cannot access a server when its dynamic public IP (DDNS) changes.**  
 **解决动态公网 IP（DDNS）服务器地址变化后，客户端无法及时访问的问题。**
 
