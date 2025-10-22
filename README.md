@@ -8,39 +8,45 @@
 - When your home network (Host B) has a public IP that changes frequently...  
   当你家宽带（主机 B）拥有公网 IP，但这个 IP 经常变动
 - External cloud servers (Host A) may fail to connect because DNS isn’t updated in time.  
-  外部云主机（主机 A）上的服务往往会因为 DNS 未及时更新而访问失败。  
+  外部云主机（主机 A）上的服务往往会因为 DNS 未及时更新而访问失败。
 - This system automatically detects IP changes and notifies Host A to reload configurations (e.g. nginx.conf) instantly.  
-  本系统能在 **IP 变化发生的最短时间内自动通知云端更新配置（如 nginx.conf）**，  
+  本系统能在 **IP 变化发生的最短时间内自动通知云端更新配置（如 nginx.conf）**
 - Achieving “real-time DDNS” behavior — without any DNS provider involved.  
   实现类似“动态 DDNS”的即时修复，而无需域名服务商介入。
 
 ## ⚙️ 适用场景
 
 ### ✅ 典型使用情形
-- 主机 **B** 是家庭/办公宽带，**服务器物理机所在地，动态公网 IP**；
-- 主机 **A** 是云服务器，尽量买离自己家近的，**用于反向中继或代理转发**；
-- 在动态公网内开游戏服务器，让客户端连接云服务器，游戏便能稳定连接
-- 主机 A 使用 nginx 或其他反向代理前端；
-- 你希望自动将 A 的代理配置（如 `proxy_pass`）更新为 B 的最新公网 IP，并自动 reload。
-- 代理到家用服务器中的 **私有游戏服务端**（如 Minecraft、Factorio、Valheim 等）；
-- 内网穿透场景下的 **低数据量应用**；
-- 自建 API、Socket 服务、或实验项目，不想备案、不想走域名。
+- Host B: Dynamic public IP, located at your home or office.  
+  主机 B： 动态公网节点，位于家庭或办公网络。；
+- Host A: Cloud relay or proxy near your region.  
+  主机 A： 云端中继节点，建议选择距离较近的地区。；
+- Host A runs Nginx as reverse proxy.  
+  主机 A 使用 nginx 或其他反向代理前端；
+- Automatically update proxy_pass target IP when Host B changes.  
+  自动更新 nginx 中 proxy_pass 的目标 IP。
+- Perfect for forwarding private game servers (Minecraft, Factorio, Valheim etc.).  
+  适用于转发 私有游戏服务端 （Minecraft、Factorio、Valheim 等）；
+- Suitable for low-traffic tunnel or private API scenarios.  
+  适合内网穿透、低数据量应用或实验项目。
 
 ### ⚠️ 不适用场景
 
-在中国大陆：
-- 不能转发浏览器访问网站（不支持 HTTP 协议）
-- 不能转发 80/443 等大陆管制端口
-- 若需转发网站请求，需要购买香港云服务器并实现另外一套转发逻辑（不在这个项目里）
+在中国大陆：  
+In mainland China:
+- ❌ Cannot proxy HTTP/HTTPS (ports 80/443 are restricted).  
+  不能转发 HTTP/HTTPS 网站访问（80/443 端口受管制）。
+- ✅ If web forwarding is required, use a Hong Kong server and build an external proxy instead.  
+  若需转发网站请求，需要购买香港云服务器并实现另外一套转发逻辑（本项目不包含）
 
-## 🧩 系统结构概览
+## 🧩 System Overview / 系统结构概览
 
 | 角色 | 说明 |
 |:--|:--|
-| 主机 B | 动态公网节点，负责向**主机 A**定时高频检测自己的公网 IP，如变化则签名通知主机 A。 |
-| 主机 A | 云端中继节点，接收通知 → 验证签名 → 修改 nginx.conf → reload。 |
-| 通信协议 | 明文传输 + RSA 签名验证（防伪造，非加密），JSON 返回状态。 |
-| 核心脚本 | `check_this_ip_notify_cdn.php`（运行在 **主机B** 由 systemd 管理的 php-cli），`notify.php`（运行在 ***主机 A** nginx 后端的 php-fpm）。 |
+| Host B / 主机 B | Periodically detects its own public IP. When changed → signs and notifies Host A. 动态公网节点，负责向**主机 A**定时高频检测自己的公网 IP，如变化则签名通知主机 A。 |
+| Host A / 主机 A | eceives → verifies → modifies nginx.conf → reloads. 云端中继节点，接收通知 → 验证签名 → 修改 nginx.conf → reload。 |
+| Protocal / 通信协议 | Plain JSON + RSA signature (anti-spoof, not encryption). 明文传输 + RSA 签名验证（防伪造，非加密），JSON 返回状态。 |
+| Core Script / 核心脚本 | check_this_ip_notify_cdn.php (on B), notify.php (on A). `check_this_ip_notify_cdn.php`（运行在 **主机B** 由 systemd 管理的 php-cli），`notify.php`（运行在 ***主机 A** nginx 后端的 php-fpm）。 |
 
 ## 🔐 第一步：生成并放置密钥
 ### 1️⃣ 在 **主机 B** 创建目录并进入
