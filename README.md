@@ -43,62 +43,44 @@ In mainland China:
 
 | 角色 | 说明 |
 |:--|:--|
-| Host B / 主机 B | Periodically detects its own public IP. When changed → signs and notifies Host A. 动态公网节点，负责向**主机 A**定时高频检测自己的公网 IP，如变化则签名通知主机 A。 |
-| Host A / 主机 A | eceives → verifies → modifies nginx.conf → reloads. 云端中继节点，接收通知 → 验证签名 → 修改 nginx.conf → reload。 |
-| Protocal / 通信协议 | Plain JSON + RSA signature (anti-spoof, not encryption). 明文传输 + RSA 签名验证（防伪造，非加密），JSON 返回状态。 |
-| Core Script / 核心脚本 | check_this_ip_notify_cdn.php (on B), notify.php (on A). `check_this_ip_notify_cdn.php`（运行在 **主机B** 由 systemd 管理的 php-cli），`notify.php`（运行在 ***主机 A** nginx 后端的 php-fpm）。 |
+| Host B <br> 主机 B | Periodically detects its own public IP. When changed → signs and notifies Host A.<br>动态公网节点，负责向**主机 A**定时高频检测自己的公网 IP，如变化则签名通知主机 A。 |
+| Host A <br> 主机 A | eceives → verifies → modifies nginx.conf → reloads.<br>云端中继节点，接收通知 → 验证签名 → 修改 nginx.conf → reload。 |
+| Protocal <br> 通信协议 | Plain JSON + RSA signature (anti-spoof, not encryption).<br>明文传输 + RSA 签名验证（防伪造，非加密），JSON 返回状态。 |
+| CoreScript <br> 核心脚本 | check_this_ip_notify_cdn.php (on B), notify.php (on A).<br>`check_this_ip_notify_cdn.php`（运行在 **主机B** 由 systemd 管理的 php-cli），`notify.php`（运行在 ***主机 A** nginx 后端的 php-fpm）。 |
 
-## 🔐 第一步：生成并放置密钥
-### 1️⃣ 在 **主机 B** 创建目录并进入
+## 🔐 Step 1: Generate & Deploy Keys / 第一步：生成并放置密钥
+### 1️⃣ On Host B / 在 **主机 B**
 ```bash
-sudo mkdir -p /opt/shell
-sudo chmod 700 /opt/shell
-cd /opt/shell
-```
-
-### 2️⃣ 在 **主机 B** 生成私钥和公钥
-- **b_priviate** 留在 **主机 B**
-- **b_public** 上传到 **主机 A** 的 /opt/shell/ 目录下
-```bash
+sudo mkdir -p /opt/shell && cd /opt/shell
 openssl genrsa -out b_private.pem 2048
 openssl rsa -in b_private.pem -pubout -out b_public.pem
-```
-
-### 3️⃣ 设置文件权限（选做）
-```bash
 sudo chmod 600 b_private.pem
 sudo chmod 644 b_public.pem
 ```
 
-### 4️⃣ 把公钥复制到主机 A（选做）
+### 2️⃣ Place files / 放置文件
+- **b_priviate** → Keep it on Host B / **b_priviate** → 留在 **主机 B**
+- **b_public** → Copy to host A:/opt/shell / **b_public** → 上传到 **主机 A** 的 /opt/shell/ 目录下
 ```bash
-scp /opt/shell/b_public.pem root@A_IP:/opt/shell/b_public.pem
-```
-或用 ssh 工具把 **b_public.pem** 上传到 /opt/shell/ 目录下  
-
-### 5️⃣ 验证密钥是否有效（选做）
-```bash
-echo "testdata" > test.txt
-openssl dgst -sha256 -sign b_private.pem -out test.sig test.txt
-openssl dgst -sha256 -verify b_public.pem -signature test.sig test.txt
+scp b_public.pem root@<IP_OF_HOST_A>:/opt/shell/
 ```
 
-## 🐘 第二步：在**主机 B**安装 php（必须）
-我一直都是用编译安装 php，不太清楚 apt, yum 等工具如何正确安装 php，请自行解决这个步骤  
-为 php 指令设置环境变量，假设编译安装在 /opt/php/bin/php，则设置建软连接  
+## 🐘 Stop 2: Install PHP on Host B (Required) / 第二步：在**主机 B**安装 php（必须）
+- 我习惯把 php 手动编译安装到 /opt/php，和一般的 apt, yum 安装路径很不一样
+- 下面给出 apt 安装 php 的简要步骤（注意，本项目不需要主机 B 上有 nginx）
 ```bash
-ln -s /opt/php/bin/php /usr/php
+sudo apt install php php-cli php-curl -y
 ```
 
-## 🧱 第三步：在**主机 B**配置主循环脚本（必须）
+## 🧱 Step 3: Setup Main Loop Script on B / 第三步：在**主机 B**配置主循环脚本（必须）
 ### 1️⃣ 放置脚本
-- 把 **check_this_ip_notify_cdn.php** 放置在 **云主机 B** 的 **/opt/shell/** 目录下；
-- 编辑 **check_this_ip_notify_cdn.php**  
-找到 const HOST_A = '';  
-在单引号 '' 内填写 **云主机 A** 的 IP 地址（注意不能填域名，否则会被云服务商拦截）  
-比如 const HOST_A = '5.6.7.8';
+- Place check_this_ip_notify_cdn.php under /opt/shell/. / 把 **check_this_ip_notify_cdn.php** 放置在 **云主机 B** 的 **/opt/shell/** 目录下；
+- Edit constant: / 编辑 **check_this_ip_notify_cdn.php**
+```php
+const HOST_A = '5.6.7.8';
+```
 
-### 2️⃣ 配置 systemd
+### 2️⃣ Create systemd service / 配置 systemd
 ```bash
 nano /usr/lib/systemd/system/check_this_ip_notify_cdn.service
 ```
@@ -121,7 +103,7 @@ nano /usr/lib/systemd/system/check_this_ip_notify_cdn.service
 > [Install]  
 > WantedBy=multi-user.target
 
-保存，退出
+- Save, Exit & Then/ 保存，退出，然后
 ```bash
 systemctl daemon-reload
 systemctl enable check_this_ip_notify_cdn.service
@@ -130,53 +112,49 @@ systemctl status check_this_ip_notify_cdn.service
 ```
 ** 可以不着急启动(start)，最好把 **主机 A** 搭建完再启动上述脚本
 
-## 第四步：在 **主机 A**（云主机）上配置 nginx + php
-### 1️⃣ 安装 nginx，必须有 stream 模块
-- 如果是 apt 安装，则文件会很分散：
--- 主程序：/usr/sbin/nginx  
--- **配置文件**：/etc/nginx/  
--- **网站目录**：/usr/share/nginx/  
--- 日志：/var/log/nginx/  
-- 如果是编译安装，预编译参数 --prefix=/opt/nginx  
--- 主程序：/opt/nginx/sbin  
--- **配置文件**：/opt/nginx/conf/  
--- **网站目录**：/opt/nginx/html/  
--- 日志：/opt/nginx/logs/  
-### 2️⃣ 修改 nginx 默认网站监听端口  
-- 打开 **配置文件** 里的 **nginx.conf**  
--- 把 **listen 80;** 修改为 **listen 100;**  
--- 确保 **server_name** 这一行是这样：**server_name _;**  
+## Step 4: Configure Nginx + PHP on Host A / 第四步：在 **主机 A**（云主机）上配置 nginx + php
+### 1️⃣ Install Nginx (with stream module) / 安装 nginx，必须有 stream 模块
+- Debian/Ubuntu paths / 如果是 apt 安装，则文件会很分散：
+-- Bin Files / 主程序：/usr/sbin/nginx  
+-- **Configuration Files** / **配置文件**：/etc/nginx/  
+-- **Website Main Dir**：/usr/share/nginx/  
+-- Log Files / 日志：/var/log/nginx/  
+- Source Build / 如果是编译带预编译参数 --prefix=/opt/nginx 安装  
+-- Bin Files / 主程序：/opt/nginx/sbin  
+-- **Configuration Files** / **配置文件**：/opt/nginx/conf/  
+-- **Website Main Dir** / **网站目录**：/opt/nginx/html/  
+-- Log Files / 日志：/opt/nginx/logs/  
+### 2️⃣ Change default port (avoid 80/443) / 修改 nginx 默认网站监听端口（避开 80/443）  
+- Open up 'nginx.conf', make sure: / 打开 **配置文件** 里的 **nginx.conf**，确保：
+```nginx
+listen 100;
+server_name _;
+```
+### 3️ Add stream proxy block / 搭建转发逻辑（核心功能）
+```nginx
+stream {  
+  server {  
+    listen 25565;  
+    proxy_pass 1.2.3.4:25565;  
+  }  
+  server {  
+    listen 7777;  
+    proxy_pass 1.2.3.4:7777;  
+  }  
+}
+```
+- ach server {} forwards a static port; IPs will be auto-updated when B’s public IP changes.  
+  每个 server{} 块转发一个固定端口，B 端 IP 变化后系统会自动更新并 reload nginx。
 
-### 3️ 搭建转发逻辑（核心功能）
-在 **nginx.conf** 中，与 http{} **平行的位置** 添加如下代码：（假设你当前主机B的动态IP是 1.2.3.4，要转发 25565 和 7777 两个端口：
-> stream {  
-> &emsp;server {  
-> &emsp;&emsp;listen 25565;  
-> &emsp;&emsp;proxy_pass 1.2.3.4:25565;  
-> &emsp;}  
-> &emsp;server {  
-> &emsp;&emsp;listen 7777;  
-> &emsp;&emsp;proxy_pass 1.2.3.4:7777;  
-> &emsp;}  
-> }  
-
-#### 在 server 内的 listen 和 : 后填写你**需要稳定转发的端口**
-每一个
-> server{  
-> &emsp;listen <要转发的端口>;  
-> &emsp;proxy_pass <当前动态公网地址>:<要转发的端口>;  
-> }  
-
-将会转发一个固定端口，并以最大可靠性确保连接可靠性（动态IP更换时，只会断一瞬间，可以瞬间重连）  
-当前动态公网地址只需要填一次，之后会在 IP 更换时自动填写并重载 nginx  
-让玩家连接 **云主机 A** 的地址，开始游戏（ddns 更新延迟问题就没有了）  
-
-### 4️⃣ 安装 php 并配置 php-fpm，确保运行权限为 root
-- 自行使用 apt install 或编译安装 php
-- php 官网 https://php.net/
-- 开启 **curl** 扩展, 并配置 **openssl** （--with-openssl）
-- 为 php-fpm 配置 systemd，确保运行参数有 -R
-- 示例中的 php 路径为 /opt/php/sbin/php-fpm，这是我的常用路径，你的 php 路径大概率不在这里，请自行修改
+### 4️⃣ Install PHP-FPM (runs as root) / 安装 php 并配置 php-fpm，确保运行权限为 root
+- Apt install php or source build php  
+  自行决定使用 apt install 或编译安装 php
+- PHP official: / php 官网  
+  https://php.net/
+- Ensure curl and openssl extensions enabled.  
+  在 php-fpm 配置中确保 curl、openssl 启用。
+- Example systemd unit (-R Required):  
+  为 php-fpm 配置 systemd，确保运行参数有 -R
 ```bash
 nano /usr/lib/systemd/system/php-fpm.service
 ```
@@ -195,34 +173,44 @@ nano /usr/lib/systemd/system/php-fpm.service
 >   
 > [Install]  
 > WantedBy=multi-user.target  
-
-保存，退出。
+- The php-fpm path in the example is /opt/php/sbin/php-fpm, which is my commonly used path, but your php path is most likely /usr/php-fpm. Please modify it accordingly.  
+  示例中的 php-fpm 路径为 /opt/php/sbin/php-fpm，这是我的常用路径，而你的 php 路径大概率在 /usr/php-fpm，请自行修改
+- Save, exit, enable & start  
+  保存，退出，使能，启用。
 ```bash
 systemctl daemon-reload
 systemctl enable php-fpm.service
 systemctl start php-fpm.service
 systemctl status php-fpm.service
 ```
-### 5️⃣ 放置文件
-把 **ip.php**, **notify.php** 放进上面的 **网站目录**
+### 5️⃣ Step 5: Deploy Backend Scripts / 放置文件
+- Place **ip.php** and **notify.php** to the Nginx Website Dir  
+  把 **ip.php**, **notify.php** 放进上面的 **网站目录**
 ### 
 
-## 运行逻辑
-### 主机 B
-- 定期访问 **主机 A** 的 `/ip.php` 获取自己当前公网 IP；
-- 若 IP 变化 → 使用私钥签名 → POST 到 `/notify.php`；
-- 若主机 A 返回 `fail`，持续重试直到成功；
-- 全程记录日志 `/opt/shell/notify.log`；
-- 使用 `systemd` 保证脚本崩溃自动重启。
+## Workflow Summary / 运行逻辑
+### 🖥️ Host B / 主机 B
+1. Periodically requests /ip.php on A to detect its current IP.  
+   定期访问 **主机 A** 的 `/ip.php` 获取自己当前公网 IP；
+2. If changed → signs with private key → POST to /notify.php.  
+   若 IP 变化 → 使用私钥签名 → POST 到 `/notify.php`；
+3. Retries on failure; logs to /opt/shell/notify.log.  
+   等待通知请求的返回，若失败则重试通知，并向 /opt/shell/notify.log 写日志，
+4. Managed by systemd for auto-restart.  
+   systemd 保障主脚本 check_this_ip_noify_cdn.php 崩溃拉起
 
-### 主机 A
-- `ip.php` 返回客户端请求的公网 IP；
-- `notify.php` 验证签名 → 更新 nginx.conf 中对应行；
-- 使用 `sed -i` 修改 `proxy_pass` 把最新 IP 直接写入配置文件 → 然后执行 `nginx -s reload`。
+### ☁️ Host A / 主机 A
+1. ip.php returns requester’s public IP.  
+   ip.php 文件接受主机 B的定期询址
+2. notify.php verifies RSA signature.  
+   有通知到来时，notify.php 验证 RSA 签名
+3. Updates nginx.conf (proxy_pass line) via sed -i.  
+   用 sed -i 更新 nginx.conf 中 proxy_pass 行的 IP 地址值
+4. Executes nginx -s reload.  
+   执行 nginx 重载
 
-## 开发环境
-
-| 项目 | 要求 |
+## Development Environment / 开发环境
+| Component / 组件 | Testing Env / 测试环境 |
 |:--|:--|
 | 操作系统 | Ubuntu 22.04
 | PHP 版本 | 8.4
