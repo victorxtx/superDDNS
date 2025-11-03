@@ -24,8 +24,8 @@ if ($privateKey === false) {
 	exit(1);
 }
 
-$echoHost   = "http://$HOST_A:100/ip.php";
-$notifyHost = "http://$HOST_A:100/notify.php";
+$echoHost   = "http://".HOST_A.":100/ip.php";
+$notifyHost = "http://".HOST_A.":100/notify.php";
 $oldIp = "";
 $logFile = "/opt/shell/notify.log";
 
