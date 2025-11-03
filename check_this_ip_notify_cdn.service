@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=php /opt/shell/check_this_ip_notify_cqcdn.php
+ExecStart=php /opt/shell/check_this_ip_notify_cdn.php
 Restart=always
 RestartSec=5
 StandardOutput=null
@@ -15,4 +15,5 @@ Group=root
 WorkingDirectory=/opt/shell
 
 [Install]
+
 WantedBy=multi-user.target
